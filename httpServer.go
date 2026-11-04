@@ -726,6 +726,28 @@ func setShowSMS(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "ok", "showSMS": raw})
 }
 
+// setShowWifiQr toggles the Wi-Fi QR pages and applies it immediately.
+func setShowWifiQr(c *fiber.Ctx) error {
+	raw := strings.ToLower(c.FormValue("show_wifi_qr"))
+	if raw != "true" && raw != "false" {
+		return c.Status(400).JSON(fiber.Map{
+			"status":  "error",
+			"message": "show_wifi_qr must be boolean",
+		})
+	}
+	on := raw == "true"
+
+	configMutex.Lock()
+	userCfg.ShowWifiQr = &on
+	saveUserConfigToFile()
+	configMutex.Unlock()
+
+	// Rebuild the merged cfg (and the page set) now. Takes configMutex itself.
+	mergeConfigs()
+
+	return c.JSON(fiber.Map{"status": "ok", "show_wifi_qr": on})
+}
+
 func getMaxBacklight(c *fiber.Ctx) error {
 	// Check for runtime override first
 	runtimeBrightnessMu.RLock()
@@ -850,6 +872,7 @@ func httpServer(port string) {
 	app.Post("/api/v1/go_set_ping_sites", setPingSites)
 	app.Post("/api/v1/go_set_screen_dimmer_time", setScreenDimmerTime)
 	app.Post("/api/v1/go_set_show_sms", setShowSMS)
+	app.Post("/api/v1/go_set_show_wifi_qr", setShowWifiQr)
 	app.Get("/api/v1/go_get_max_backlight", getMaxBacklight)
 	app.Post("/api/v1/go_set_max_backlight", setMaxBacklight)
 	app.Post("/api/v1/go_reset_max_backlight", resetMaxBacklight)

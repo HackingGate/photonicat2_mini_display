@@ -305,7 +305,7 @@ func smsThemeColors() (recv color.RGBA, title color.RGBA) {
 	// carries an explicit colour. Any themed page yields the palette; the
 	// GPS page is included, so it works whichever pages exist.
 	bigFonts := map[string]bool{"huge": true, "gigantic": true, "big": true, "reg": true}
-	for i := 0; i < cfgNumPages; i++ {
+	for i := 0; i < templatePageCount(); i++ {
 		els, ok := cfg.DisplayTemplate.Elements["page"+strconv.Itoa(i)]
 		if !ok {
 			continue

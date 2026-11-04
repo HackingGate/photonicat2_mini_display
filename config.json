@@ -1,5 +1,5 @@
 {
-    "config_version": 102,
+    "config_version": 103,
     "ping_site0": "1.1.1.1",
     "ping_type0": "icmp",
     "ping_site1": "photonicat.com",
@@ -28,6 +28,7 @@
         ]
     },
     "show_sms": true,
+    "show_wifi_qr": true,
     "sms_limit_for_screen": 5,
     "screen_dimmer_time_on_battery_seconds": 60,
     "screen_dimmer_time_on_dc_seconds": 86400,

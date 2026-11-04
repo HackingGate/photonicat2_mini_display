@@ -465,6 +465,7 @@ func getInfoFromPcatWeb() {
 					ssids = append(ssids, iface.SSID)
 				}
 				globalData.Store("WiFiSSIDs", ssids)
+				updateWifiQrPages(info.WiFiInterfaces)
 
 				// Page-3 SSID rows. pcat-manager-web classifies each radio by
 				// device path (Onboard/Builtin vs PCIE) and reports which one is

@@ -879,6 +879,11 @@ func mergeConfigs() error {
 	// collector reveals it when pcat-manager-web reports the feature enabled.
 	detectGpsPage()
 
+	// Wi-Fi QR pages follow the template pages; re-added here because
+	// cfgNumPages was just rebuilt from the template (and the show_wifi_qr
+	// toggle may have changed).
+	refreshWifiQrPagesLocked()
+
 	// Initialize totalNumPages based on ShowSms setting
 	if cfg.ShowSms {
 		// Will be updated by getSmsPages() goroutine

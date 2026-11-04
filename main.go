@@ -454,10 +454,14 @@ type Config struct {
 	// UI (and support) can tell what this firmware understands. mergeConfigs
 	// forces the shipped value, so a stale copy in user_config never wins.
 	// History: 100 = pre-versioned scheme, 101 = ping_type0/1 (tcp/http
-	// ping), 102 = "https" ping type.
+	// ping), 102 = "https" ping type, 103 = show_wifi_qr (Wi-Fi QR pages).
 	ConfigVersion int `json:"config_version,omitempty"`
 	DisplayTemplate                  DisplayTemplate     `json:"display_template"`
 	ShowSms                          bool                `json:"show_sms"`
+	// ShowWifiQr shows one "scan to join" QR page per access point. A pointer
+	// so "absent" (every user_config written before this existed) stays
+	// distinct from false and inherits the shipped default, which is on.
+	ShowWifiQr *bool `json:"show_wifi_qr,omitempty"`
 	SmsLimitForScreen                int                 `json:"sms_limit_for_screen"`
 	CustomMetrics                    CustomMetricsConfig `json:"custom_metrics,omitempty"`
 	PublicIPLookup                   PublicIPLookup      `json:"public_ip_lookup,omitempty"`
@@ -729,7 +733,7 @@ func pageShowsCpuBars(pageIdx int) bool {
 }
 
 func pageHasMatch(pageIdx int, match func(DisplayElement) bool) bool {
-	if pageIdx < 0 || pageIdx >= cfgNumPages {
+	if pageIdx < 0 || pageIdx >= templatePageCount() {
 		return false
 	}
 	page, ok := cfg.DisplayTemplate.Elements["page"+strconv.Itoa(pageIdx)]

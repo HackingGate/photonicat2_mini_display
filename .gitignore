@@ -20,3 +20,4 @@ test_runner_*
 .DS_Store
 /openwrt/
 __pycache__/
+wifi_qr_preview*.png

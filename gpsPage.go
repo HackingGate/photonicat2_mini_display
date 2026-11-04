@@ -77,10 +77,11 @@ func updateGpsPagePresence(want bool) {
 		return
 	}
 	gpsPageShown = want
+	// The Wi-Fi QR pages sit after the template pages, so they ride along.
 	if want {
-		cfgNumPages = gpsBaseCfgPages
+		cfgNumPages = gpsBaseCfgPages + wifiQrPageCount()
 	} else {
-		cfgNumPages = gpsBaseCfgPages - 1
+		cfgNumPages = gpsBaseCfgPages - 1 + wifiQrPageCount()
 	}
 	if cfg.ShowSms {
 		totalNumPages = cfgNumPages + lenSmsPagesImages
@@ -90,7 +91,7 @@ func updateGpsPagePresence(want bool) {
 	// If the display is parked on (or past) the page we just removed, nothing
 	// re-renders on its own — kick the normal page-change path so the stale
 	// page animates away instead of lingering until a button press.
-	if !want && currPageIdx >= cfgNumPages {
+	if !want && currPageIdx >= templatePageCount() {
 		httpChangePageTriggered = true
 	}
 	log.Println("gps page shown:", want, "cfgNumPages:", cfgNumPages,
@@ -100,7 +101,7 @@ func updateGpsPagePresence(want bool) {
 // currentGpsInterval: 1 s while awake on the GPS page (live speed/heading),
 // otherwise 30 s — enough to track the web toggle and fix state cheaply.
 func currentGpsInterval() time.Duration {
-	if idleState != STATE_IDLE && gpsPageShown && currPageIdx == cfgNumPages-1 {
+	if idleState != STATE_IDLE && gpsPageShown && currPageIdx == templatePageCount()-1 {
 		return 1 * time.Second
 	}
 	return 30 * time.Second

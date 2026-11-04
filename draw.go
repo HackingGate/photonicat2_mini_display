@@ -250,6 +250,9 @@ func middlePageFingerprint(cfg *Config, isSMS bool, pageIdx int) string {
 	if cfg == nil {
 		return "nil"
 	}
+	if isWifiQrPage(pageIdx) {
+		return wifiQrFingerprint(pageIdx - templatePageCount())
+	}
 	var b strings.Builder
 	b.Grow(256)
 	b.WriteString("v")
@@ -303,6 +306,9 @@ func pageHasOverflowText(cfg *Config, pageIdx int) bool {
 	if cfg == nil {
 		return false
 	}
+	if isWifiQrPage(pageIdx) {
+		return wifiQrSsidOverflows(pageIdx - templatePageCount())
+	}
 	page := cfg.DisplayTemplate.Elements["page"+strconv.Itoa(pageIdx)]
 	for _, el := range page {
 		if el.Enable == 0 || el.Type != "text" || el.DataKey == "" {
@@ -347,6 +353,13 @@ func pageHasOverflowText(cfg *Config, pageIdx int) bool {
 // normally and false is returned. If it overflows, it is drawn as a clipped,
 // wrapping ticker and true is returned. clr is the text color; face its font.
 func drawScrollingText(frame *image.RGBA, text string, x, y, availWidth int, face font.Face, clr color.Color) bool {
+	return drawScrollingTextShift(frame, text, x, y, availWidth, face, clr, 0)
+}
+
+// drawScrollingTextShift is drawScrollingText with a sub-pixel pen shift
+// applied to the ticker, so a caller can land the text's ink exactly on a
+// column (the Wi-Fi QR page passes minus the first glyph's side-bearing).
+func drawScrollingTextShift(frame *image.RGBA, text string, x, y, availWidth int, face font.Face, clr color.Color, shift fixed.Int26_6) bool {
 	if frame == nil || text == "" || availWidth <= 0 {
 		drawText(frame, text, x, y, face, clr, false)
 		return false
@@ -411,11 +424,11 @@ func drawScrollingText(frame *image.RGBA, text string, x, y, availWidth int, fac
 	src := image.NewUniform(clr)
 	rd := &font.Drawer{Dst: region, Src: src, Face: face}
 	baseline := ascent
-	rd.Dot = fixed.P(-offset, baseline)
+	rd.Dot = fixed.Point26_6{X: fixed.I(-offset) + shift, Y: fixed.I(baseline)}
 	rd.DrawString(text)
 	// Second copy trails the first by loopW; it scrolls in from the right as
 	// the first leaves on the left.
-	rd.Dot = fixed.P(-offset+loopW, baseline)
+	rd.Dot = fixed.Point26_6{X: fixed.I(-offset+loopW) + shift, Y: fixed.I(baseline)}
 	rd.DrawString(text)
 
 	// Blit the clipped region into the frame at the element position. Use Over
@@ -2540,6 +2553,11 @@ func renderMiddle(frame *image.RGBA, cfg *Config, isSMS bool, pageIdx int) {
 		return
 	}
 
+	if isWifiQrPage(pageIdx) {
+		drawWifiQrPage(frame, pageIdx-templatePageCount())
+		return
+	}
+
 	page := cfg.DisplayTemplate.Elements["page"+strconv.Itoa(pageIdx)]
 
 	// Process each element.
@@ -3001,8 +3019,19 @@ func renderFooter(frame *image.RGBA, currPage int, numOfPages int, isSMS bool) b
 	// immediately. Without it the key only moves when the page index or count
 	// changes, so a recolor left the old footer (background included) on screen
 	// until the user pressed the button to page forward.
+	// Wi-Fi QR pages are not counted in the page dots. On one of them the
+	// footer shows its radio line ("5.745GHz • 80MHz • ch149") instead, and
+	// falls back to the dots only when no live radio data matched.
+	radioLine := ""
+	if !isSMS {
+		radioLine = wifiQrFooterLine(currPage)
+		numOfPages -= wifiQrPageCount()
+		if numOfPages < 1 {
+			numOfPages = 1
+		}
+	}
 	magicStr := strconv.Itoa(currPage) + " " + strconv.Itoa(numOfPages) + " " +
-		strconv.FormatBool(isSMS) + " " + strconv.Itoa(configVersion)
+		strconv.FormatBool(isSMS) + " " + strconv.Itoa(configVersion) + " " + radioLine
 	if cacheFooterStr == magicStr {
 		return false //no need to refresh
 	}
@@ -3020,6 +3049,10 @@ func renderFooter(frame *image.RGBA, currPage int, numOfPages int, isSMS bool) b
 		footerText := "SMS: " + strconv.Itoa(currPage+1) + "/" + strconv.Itoa(numOfPages)
 		drawText(frame, footerText, 172/2, 2, faceMicro, PCAT_WHITE, true)
 
+	} else if radioLine != "" {
+		// Same micro font and row as the SMS footer, in light grey,
+		// centred by ink like the info line above it.
+		drawTextCenteredInk(frame, radioLine, PCAT2_LCD_WIDTH/2, 0, 2, faceMicro, color.RGBA{200, 200, 200, 255})
 	}else{
 		cir, _, _, err := loadImage(assetsPrefix+"/assets/svg/dotCircle.svg")
 		if err != nil {

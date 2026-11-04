@@ -149,6 +149,41 @@ Multiple pages with rotating content:
 - **Page indicators**: Dots showing current page
 - **SMS indicator**: Shows SMS page count when active
 
+## Wi-Fi QR Pages
+
+One page per access point, after the layout pages (GPS included) and before
+the SMS pages. Each page shows:
+
+- the band and Wi-Fi generation as the title (`2.4GHz WiFi 6`,
+  `5GHz WiFi 6`, `6GHz WiFi 6E`). The generation comes from the radio's
+  htmode: HT/VHT/HE/EHT = WiFi 4/5/6/7;
+- the SSID at the same size, scrolling as a ticker when it is too long;
+- a QR code on a white card captioned "Scan to connect", which iOS and Android
+  cameras join directly;
+- an `Onboard • WPA2 • 3 👤` line: the radio (as on page 2), security type and
+  current Wi-Fi client count. The key itself is not printed;
+- in the footer, instead of page dots, the live radio line
+  `5.745GHz • 80MHz • ch149` read from `iwinfo`. The Wi-Fi pages are not
+  counted in the other pages' dots.
+
+The page follows the /screen colour theme: the title uses the theme's primary
+colour, the SSID its data colour and the info line its accent colour, and the
+card's corners blend into the theme background.
+
+Radios that share an SSID and key become one `2.4/5GHz` page. Disabled radios,
+radios relaying an upstream hotspot, and secured networks with no known key get
+no page.
+
+Data comes from pcat-manager-web's `wifi_interfaces`. The pages are
+controlled by `show_wifi_qr` (on in `/screen`, or
+`POST /api/v1/go_set_show_wifi_qr` with `show_wifi_qr=true|false`). The setting
+is **on by default**, including on devices upgraded from a firmware whose
+user config never had the key (`config_version` 103).
+
+```bash
+WIFI_QR_PREVIEW=1 go test -run TestDrawWifiQrPage .   # writes wifi_qr_preview*.png
+```
+
 ## Ping System Details
 
 ### Ping Logic
